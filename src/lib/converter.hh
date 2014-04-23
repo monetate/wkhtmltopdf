@@ -47,6 +47,7 @@ public:
 signals:
     void warning(const QString & message);
     void error(const QString & message);
+    void scriptResult(const QString& result);
     void phaseChanged();
     void progressChanged(int progress);
     void finished(bool ok);

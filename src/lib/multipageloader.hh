@@ -70,6 +70,7 @@ signals:
 	void loadStarted();
 	void warning(QString text);
 	void error(QString text);
+        void scriptResult(QString test);
 private:
 	MultiPageLoaderPrivate * d;
 	friend class MultiPageLoaderPrivate;

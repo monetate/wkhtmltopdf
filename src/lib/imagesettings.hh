@@ -90,9 +90,6 @@ struct DLL_PUBLIC ImageGlobal {
 
 	bool smartWidth;
 
-        //! Javascript to evaluate after page load
-        QString evalJs;
-
 	QString get(const char * name);
 	bool set(const char * name, const QString & value);
 };

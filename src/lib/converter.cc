@@ -79,6 +79,10 @@ void ConverterPrivate::forwardWarning(QString warning) {
 	emit outer().warning(warning);
 }
 
+void ConverterPrivate::forwardScriptResult(QString result) {
+	emit outer().scriptResult(result);
+}
+
 void ConverterPrivate::cancel() {
 	error=true;
 }

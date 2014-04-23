@@ -259,6 +259,9 @@ void ResourceObject::loadFinished(bool ok) {
 	foreach (const QString & str, settings.runScript)
 		webPage.mainFrame()->evaluateJavaScript(str);
 
+        // communicate result of js evaluation
+        emit multiPageLoader.outer.scriptResult("hello world");
+
 	// XXX: If loading failed there's no need to wait
 	//      for javascript on this resource.
 	if (!ok || signalPrint || settings.jsdelay == 0) loadDone();

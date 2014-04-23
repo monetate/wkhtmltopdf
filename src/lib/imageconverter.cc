@@ -23,7 +23,7 @@
 #undef QT_DLL
 #endif
 #endif
-
+#include <iostream>
 #include "imageconverter_p.hh"
 #include "imagesettings.hh"
 #include <QBuffer>
@@ -57,6 +57,7 @@ ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::se
 	connect(&loader, SIGNAL(loadFinished(bool)), this, SLOT(pagesLoaded(bool)));
 	connect(&loader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
 	connect(&loader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
+	connect(&loader, SIGNAL(scriptResult(QString)), this, SLOT(forwardScriptResult(QString)));
 }
 
 void ImageConverterPrivate::beginConvert() {
@@ -242,10 +243,22 @@ ConverterPrivate & ImageConverter::priv() {
 
 ImageConverter::ImageConverter(wkhtmltopdf::settings::ImageGlobal & s, const QString * data) {
 	d = new ImageConverterPrivate(*this, s, data);
+        connect(this, SIGNAL(scriptResult(const QString &)), this, SLOT(slotScriptResult(const QString &)));
+
 }
 
 const QByteArray & ImageConverter::output() {
 	return d->outputData;
+}
+
+QString ImageConverter::scriptResult()
+{
+    return script_result;
+}
+
+void ImageConverter::slotScriptResult( const QString& result )
+{
+    script_result = result;
 }
 
 }

@@ -37,6 +37,7 @@ public:
 	ImageConverter(settings::ImageGlobal & settings, const QString * data=NULL);
 	~ImageConverter();
 	const QByteArray & output();
+        QString scriptResult();
 private:
 	ImageConverterPrivate * d;
 	virtual ConverterPrivate & priv();
