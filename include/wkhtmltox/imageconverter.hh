@@ -38,10 +38,14 @@ public:
 	~ImageConverter();
 	const QByteArray & output();
         QString scriptResult();
+
+private slots:
+        void slotScriptResult( const QString& result );
 private:
 	ImageConverterPrivate * d;
 	virtual ConverterPrivate & priv();
 	friend class ImageConverterPrivate;
+        QString script_result;
 };
 
 #include <wkhtmltox/dllend.inc>

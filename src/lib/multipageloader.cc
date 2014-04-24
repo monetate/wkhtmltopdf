@@ -256,11 +256,12 @@ void ResourceObject::loadFinished(bool ok) {
 	}
 
 	// Evaluate extra user supplied javascript
+        QString script_result;
 	foreach (const QString & str, settings.runScript)
-		webPage.mainFrame()->evaluateJavaScript(str);
+            script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
 
         // communicate result of js evaluation
-        emit multiPageLoader.outer.scriptResult("hello world");
+        emit multiPageLoader.outer.scriptResult(script_result);
 
 	// XXX: If loading failed there's no need to wait
 	//      for javascript on this resource.
