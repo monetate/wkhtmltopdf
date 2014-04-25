@@ -194,12 +194,15 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 	}
 
 	if (settings.transparent && (settings.fmt == "png" || settings.fmt == "svg")) {
-            //QWebElement e = frame->findFirstElement("body");
-            //e.setStyleProperty("background-color", "transparent");
-            //	e.setStyleProperty("background-image", "none");
-		QPalette pal = loaderObject->page.palette();
-		pal.setColor(QPalette::Base, QColor(Qt::transparent));
-		loaderObject->page.setPalette(pal);
+            QWebElement e = frame->findFirstElement("body");
+            e.setStyleProperty("background-color", "transparent");
+            e.setStyleProperty("background-image", "none");
+            QPalette pal = loaderObject->page.palette();
+            pal.setColor(QPalette::Base, QColor(Qt::transparent));
+            loaderObject->page.setPalette(pal);
+            painter.setCompositionMode(QPainter::CompositionMode_Clear);
+            painter.fillRect(QRect(QPoint(0,0),loaderObject->page.viewportSize()), QColor(0,0,0,0));
+            painter.setCompositionMode(QPainter::CompositionMode_SourceOver);
 	} else {
 		painter.fillRect(QRect(QPoint(0,0),loaderObject->page.viewportSize()), Qt::white);
 	}
