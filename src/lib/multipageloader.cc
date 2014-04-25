@@ -24,6 +24,7 @@
 #endif
 #endif
 
+#include <iostream>
 #include "multipageloader_p.hh"
 #include <QFile>
 #include <QFileInfo>
@@ -50,6 +51,7 @@ namespace wkhtmltopdf {
 LoaderObject::LoaderObject(QWebPage & p): page(p), skip(false) {};
 
 MyNetworkAccessManager::MyNetworkAccessManager(const settings::LoadPage & s): 
+    QNetworkAccessManager(),
 	disposed(false),
 	settings(s) {
 
@@ -143,6 +145,7 @@ bool MyQWebPage::shouldInterruptJavaScript() {
 }
 
 ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s):
+    QObject(),
 	networkAccessManager(s),
 	url(u),
 	loginTry(0),
@@ -200,6 +203,11 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 
 	webPage.setNetworkAccessManager(&networkAccessManager);
 	webPage.mainFrame()->setZoomFactor(settings.zoomFactor);
+
+}
+
+ResourceObject::~ResourceObject()
+{
 }
 
 /*!
@@ -520,7 +528,8 @@ MultiPageLoaderPrivate::MultiPageLoaderPrivate(const settings::LoadGlobal & s, M
 		cookieJar->loadFromFile(settings.cookieJar);
 }
 
-MultiPageLoaderPrivate::~MultiPageLoaderPrivate() {
+MultiPageLoaderPrivate::~MultiPageLoaderPrivate() 
+{
 	clearResources();
 }
 
@@ -544,7 +553,9 @@ void MultiPageLoaderPrivate::load() {
 	if (resources.size() == 0) loadDone();
 }
 
-void MultiPageLoaderPrivate::clearResources() {
+void MultiPageLoaderPrivate::clearResources() 
+{
+
 	while (resources.size() > 0)
 	{
 		// XXX: Using deleteLater() to dispose
@@ -554,8 +565,10 @@ void MultiPageLoaderPrivate::clearResources() {
 		// on resources list, is it tries to delete
 		// each objet on removal.
 		ResourceObject *tmp = resources.takeFirst();
-		tmp->deleteLater();
+		//tmp->deleteLater();
+                delete tmp;
 	}
+
 	tempIn.remove();
 }
 

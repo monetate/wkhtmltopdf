@@ -37,6 +37,7 @@ class DLL_LOCAL ImageConverterPrivate: public ConverterPrivate {
 	Q_OBJECT
 public:
 	ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::settings::ImageGlobal & s, const QString * data);
+        ~ImageConverterPrivate();
 
 	wkhtmltopdf::settings::ImageGlobal settings;
 	MultiPageLoader loader;

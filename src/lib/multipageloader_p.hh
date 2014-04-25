@@ -84,6 +84,7 @@ private:
 	MultiPageLoaderPrivate & multiPageLoader;
 public:
 	ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s);
+        ~ResourceObject();
 	MyQWebPage webPage;
 	LoaderObject lo;
 	int httpErrorCode;

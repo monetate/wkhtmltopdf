@@ -60,6 +60,11 @@ ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::se
 	connect(&loader, SIGNAL(scriptResult(QString)), this, SLOT(forwardScriptResult(QString)));
 }
 
+ImageConverterPrivate::~ImageConverterPrivate()
+{
+    clearResources();
+}
+
 void ImageConverterPrivate::beginConvert() {
 	error = false;
 	convertionDone = false;
@@ -74,8 +79,9 @@ void ImageConverterPrivate::beginConvert() {
 }
 
 
-void ImageConverterPrivate::clearResources() {
-	loader.clearResources();
+void ImageConverterPrivate::clearResources() 
+{
+    loader.clearResources();
 }
 
 void ImageConverterPrivate::pagesLoaded(bool ok) {
@@ -84,6 +90,7 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 		fail();
 		return;
 	}
+
 	// if fmt is empty try to get it from file extension in out
 	if (settings.fmt=="") {
 		if (settings.out == "-")
@@ -224,8 +231,6 @@ void ImageConverterPrivate::pagesLoaded(bool ok) {
 	emit out.phaseChanged();
 	convertionDone = true;
 	emit out.finished(true);
-
-	qApp->exit(0); // quit qt's event handling
 }
 
 Converter & ImageConverterPrivate::outer() {
@@ -234,6 +239,10 @@ Converter & ImageConverterPrivate::outer() {
 
 ImageConverter::~ImageConverter() {
 	delete d;
+        QCoreApplication::sendPostedEvents();
+        QCoreApplication::processEvents();
+	qApp->quit(); // quit qt's event handling
+
 }
 
 ConverterPrivate & ImageConverter::priv() {
