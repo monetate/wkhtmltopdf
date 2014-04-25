@@ -254,8 +254,11 @@ void ResourceObject::loadFinished(bool ok) {
 
 	multiPageLoader.hasError = multiPageLoader.hasError || (!ok && settings.loadErrorHandling == settings::LoadPage::abort);
 	if (!ok) {
-		if (settings.loadErrorHandling == settings::LoadPage::abort)
-			error(QString("Failed loading page ") + url.toString() + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
+            if (settings.loadErrorHandling == settings::LoadPage::abort)
+            {
+                error(QString("Failed loading page ") + url.toString() + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
+                return;
+            }
 		else if (settings.loadErrorHandling == settings::LoadPage::skip) {
 			warning(QString("Failed loading page ") + url.toString() + " (skipped)");
 			lo.skip = true;
