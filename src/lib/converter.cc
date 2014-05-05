@@ -83,6 +83,10 @@ void ConverterPrivate::forwardScriptResult(QString result) {
 	emit outer().scriptResult(result);
 }
 
+void ConverterPrivate::forwardJavascriptEnvironment(QWebPage * page) {
+	emit outer().javascriptEnvironment(page);
+}
+
 void ConverterPrivate::cancel() {
 	error=true;
 }

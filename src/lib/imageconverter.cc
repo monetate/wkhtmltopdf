@@ -58,6 +58,7 @@ ImageConverterPrivate::ImageConverterPrivate(ImageConverter & o, wkhtmltopdf::se
 	connect(&loader, SIGNAL(error(QString)), this, SLOT(forwardError(QString)));
 	connect(&loader, SIGNAL(warning(QString)), this, SLOT(forwardWarning(QString)));
 	connect(&loader, SIGNAL(scriptResult(QString)), this, SLOT(forwardScriptResult(QString)));
+	connect(&loader, SIGNAL(javascriptEnvironment(QWebPage*)), this, SLOT(forwardJavascriptEnvironment(QWebPage*)));
 }
 
 ImageConverterPrivate::~ImageConverterPrivate()
@@ -85,6 +86,11 @@ void ImageConverterPrivate::clearResources()
 }
 
 void ImageConverterPrivate::pagesLoaded(bool ok) {
+    currentPhase = 2;
+    emit out.phaseChanged();
+    convertionDone = true;
+    emit out.finished(true);
+    return;
 	if (errorCode == 0) errorCode = loader.httpErrorCode();
 	if (!ok) {
 		fail();

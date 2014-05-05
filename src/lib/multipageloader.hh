@@ -71,6 +71,7 @@ signals:
 	void warning(QString text);
 	void error(QString text);
         void scriptResult(QString test);
+        void javascriptEnvironment(QWebPage* page);
 private:
 	MultiPageLoaderPrivate * d;
 	friend class MultiPageLoaderPrivate;

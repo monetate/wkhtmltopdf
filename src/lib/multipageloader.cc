@@ -267,9 +267,12 @@ void ResourceObject::loadFinished(bool ok) {
 	}
 
 	// Evaluate extra user supplied javascript
+        emit multiPageLoader.outer.javascriptEnvironment(&webPage);
         QString script_result;
-	foreach (const QString & str, settings.runScript)
+	foreach (const QString & str, settings.runScript) 
+        {
             script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
+        }
 
         // communicate result of js evaluation
         emit multiPageLoader.outer.scriptResult(script_result);

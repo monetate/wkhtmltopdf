@@ -27,8 +27,10 @@
 #endif
 
 #include <QObject>
+#include <QWebPage>
 #include <wkhtmltox/loadsettings.hh>
 #include <wkhtmltox/dllbegin.inc>
+
 
 namespace wkhtmltopdf {
 
@@ -48,6 +50,7 @@ signals:
     void warning(const QString & message);
     void error(const QString & message);
     void scriptResult(const QString& result);
+    void javascriptEnvironment(QWebPage* page);
     void phaseChanged();
     void progressChanged(int progress);
     void finished(bool ok);

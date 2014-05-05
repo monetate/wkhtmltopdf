@@ -63,6 +63,7 @@ public slots:
 	void forwardError(QString error);
 	void forwardWarning(QString warning);
         void forwardScriptResult(QString result);
+        void forwardJavascriptEnvironment(QWebPage * page);
 private:
   friend class Converter;
 };
