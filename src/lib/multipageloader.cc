@@ -231,9 +231,9 @@ void ResourceObject::loadStarted() {
 void ResourceObject::loadProgress(int p) {
 	// If we are finished, ignore this signal.
 	if (finished || multiPageLoader.resources.size() <= 0) {
-		warning("A finished ResourceObject received a loading progress signal. "
-			"This migth be an indication of an iframe taking to long to load.");
-		return;
+            warning(QString("A finished ResourceObject received a loading progress signal. "
+                            "Finished: %1, resources size:%2").arg(finished).arg(multiPageLoader.resources.size()));
+            return;
 	}
 
 	multiPageLoader.progressSum -= progress;
@@ -247,17 +247,17 @@ void ResourceObject::loadProgress(int p) {
 void ResourceObject::loadFinished(bool ok) {
 	// If we are finished, this migth be a potential bug.
 	if (finished || multiPageLoader.resources.size() <= 0) {
-		warning("A finished ResourceObject received a loading finished signal. "
-			"This migth be an indication of an iframe taking to long to load.");
-		return;
+            warning(QString("A finished ResourceObject received a loading finished signal. "
+                            "Finished: %1, resources size: %2").arg(finished).arg(multiPageLoader.resources.size()));
+            return;
 	}
 
 	multiPageLoader.hasError = multiPageLoader.hasError || (!ok && settings.loadErrorHandling == settings::LoadPage::abort);
 	if (!ok) {
             if (settings.loadErrorHandling == settings::LoadPage::abort)
             {
-                error(QString("Failed loading page ") + url.toString() + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
-                return;
+                error(QString("Failed loading page ") + url.toString());// + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
+                //return;
             }
 		else if (settings.loadErrorHandling == settings::LoadPage::skip) {
 			warning(QString("Failed loading page ") + url.toString() + " (skipped)");
@@ -281,7 +281,9 @@ void ResourceObject::loadFinished(bool ok) {
 	//      for javascript on this resource.
 	if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
 	else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
-	else QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
+	else {
+            QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
+        }
 }
 
 void ResourceObject::waitWindowStatus() {
