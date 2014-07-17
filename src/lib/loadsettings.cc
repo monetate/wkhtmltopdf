@@ -150,7 +150,9 @@ LoadPage::LoadPage():
 	stopSlowScripts(true),
 	debugJavascript(false),
 	loadErrorHandling(abort),
-	mediaLoadErrorHandling(ignore) {};
+	mediaLoadErrorHandling(ignore),
+        load_timeout_msec(0)
+{};
 
 }
 }

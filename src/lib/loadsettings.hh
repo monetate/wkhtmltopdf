@@ -117,6 +117,7 @@ struct DLL_PUBLIC LoadPage {
 
 	//! Additional javascript to run on a page once it has loaded
 	QList< QString > runScript;
+        int load_timeout_msec;
 
 	QString checkboxSvg;
 	QString checkboxCheckedSvg;

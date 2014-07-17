@@ -167,7 +167,7 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 
 	connect(&webPage, SIGNAL(loadStarted()), this, SLOT(loadStarted()));
 	connect(&webPage, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+	connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
 	connect(&webPage, SIGNAL(printRequested(QWebFrame*)), this, SLOT(printRequested(QWebFrame*)));
 
 	//If some ssl error occurs we want sslErrors to be called, so the we can ignore it
@@ -221,6 +221,12 @@ void ResourceObject::loadStarted() {
 	if (multiPageLoader.loadStartedEmitted) return;
 	multiPageLoader.loadStartedEmitted=true;
 	emit multiPageLoader.outer.loadStarted();
+
+        if ( settings.load_timeout_msec )
+        {
+            QTimer::singleShot(settings.load_timeout_msec, this, SLOT(loadIncomplete()));
+        }
+
 }
 
 
@@ -245,6 +251,7 @@ void ResourceObject::loadProgress(int p) {
 
 
 void ResourceObject::loadFinished(bool ok) {
+//    std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << std::endl;
 	// If we are finished, this migth be a potential bug.
 	if (finished || multiPageLoader.resources.size() <= 0) {
             warning(QString("A finished ResourceObject received a loading finished signal. "
@@ -271,6 +278,7 @@ void ResourceObject::loadFinished(bool ok) {
         QString script_result;
 	foreach (const QString & str, settings.runScript) 
         {
+            //std::cout << "evaluating javascript:" << str.toLocal8Bit().constData() << std::endl;
             script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
         }
 
@@ -315,6 +323,13 @@ void ResourceObject::loadDone() {
 	if (multiPageLoader.loading == 0)
 		multiPageLoader.loadDone();
 }
+
+void ResourceObject::loadIncomplete() {
+	if (finished) return;
+        error("Incomplete load");
+        loadDone();
+}
+
 
 /*!
  * Called when the page requires authentication, fills in the username
