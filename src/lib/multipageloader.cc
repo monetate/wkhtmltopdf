@@ -110,11 +110,15 @@ QNetworkReply * MyNetworkAccessManager::createRequest(Operation op, const QNetwo
 		foreach (const HT & j, settings.customHeaders)
 			r3.setRawHeader(j.first.toLatin1(), j.second.toLatin1());
 	}
+        //std::cout << "QNetworkRequest::createRequest:" << req.url().toString().toLocal8Bit().constData() << " op:" << op << std::endl;
 	return QNetworkAccessManager::createRequest(op, r3, outgoingData);
 }
 
 
-MyQWebPage::MyQWebPage(ResourceObject & res): resource(res) {}
+MyQWebPage::MyQWebPage(ResourceObject & res): QWebPage(), resource(res) 
+{
+//    std::cout << "MyQWebPage::MyQWebPage" << std::endl;
+}
 
 void MyQWebPage::javaScriptAlert(QWebFrame *, const QString & msg) {
 	resource.warning(QString("Javascript alert: %1").arg(msg));
@@ -144,6 +148,38 @@ bool MyQWebPage::shouldInterruptJavaScript() {
 	return false;
 }
 
+bool MyQWebPage::supportsExtension ( Extension extension ) const
+{
+    std::cout << "MyQWebPage::supportsExtension:" <<extension<< std::endl;
+    if (extension == QWebPage::ErrorPageExtension)
+    {
+        return true;
+    }
+    return false;
+}
+
+bool MyQWebPage::extension(Extension extension, const ExtensionOption *option, ExtensionReturn *output)
+{
+    std::cout << "MyQWebPage::extension:" <<extension<< std::endl;
+    if (extension != QWebPage::ErrorPageExtension)
+        return false;
+
+    ErrorPageExtensionOption *errorOption = (ErrorPageExtensionOption*) option;
+    std::cout << "Error loading " << qPrintable(errorOption->url.toString())  << std::endl;
+    if(errorOption->domain == QWebPage::QtNetwork)
+        std::cout << "Network error (" << errorOption->error << "): ";
+    else if(errorOption->domain == QWebPage::Http)
+        std::cout << "HTTP error (" << errorOption->error << "): ";
+    else if(errorOption->domain == QWebPage::WebKit)
+        std::cout << "WebKit error (" << errorOption->error << "): ";
+
+    std::cout << qPrintable(errorOption->errorString) << std::endl;
+
+    return false;
+}
+
+
+
 ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s):
     QObject(),
 	networkAccessManager(s),
@@ -168,6 +204,7 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 	connect(&webPage, SIGNAL(loadStarted()), this, SLOT(loadStarted()));
 	connect(&webPage, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
 	connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+        //connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
 	connect(&webPage, SIGNAL(printRequested(QWebFrame*)), this, SLOT(printRequested(QWebFrame*)));
 
 	//If some ssl error occurs we want sslErrors to be called, so the we can ignore it
@@ -251,7 +288,7 @@ void ResourceObject::loadProgress(int p) {
 
 
 void ResourceObject::loadFinished(bool ok) {
-//    std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << std::endl;
+    //std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << std::endl;
 	// If we are finished, this migth be a potential bug.
 	if (finished || multiPageLoader.resources.size() <= 0) {
             warning(QString("A finished ResourceObject received a loading finished signal. "
@@ -313,6 +350,7 @@ void ResourceObject::loadDone() {
 	if (finished) return;
 	finished=true;
 
+        //std::cout << "ResourceObject::loadDone, stopping all..." << std::endl;
 	// Ensure no more loading goes..
 	webPage.triggerAction(QWebPage::Stop);
 	webPage.triggerAction(QWebPage::StopScheduledPageRefresh);
@@ -369,6 +407,10 @@ void ResourceObject::error(const QString & str) {
  * \param reply The networkreply that has finished
  */
 void ResourceObject::amfinished(QNetworkReply * reply) {
+    if ( reply->error() )
+    {
+        std::cout << "amfinished QNetworkReply:" << reply->url().toString().toLocal8Bit().constData() << " error:" << reply->error() << std::endl;
+    }
 	int networkStatus = reply->error();
 	int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 	if ((networkStatus != 0 && networkStatus != 5) || (httpStatus > 399 && httpErrorCode == 0))

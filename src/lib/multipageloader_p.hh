@@ -68,8 +68,11 @@ public:
 	virtual bool javaScriptConfirm(QWebFrame * frame, const QString & msg);
 	virtual bool javaScriptPrompt(QWebFrame * frame, const QString & msg, const QString & defaultValue, QString * result);
 	virtual void javaScriptConsoleMessage(const QString & message, int lineNumber, const QString & sourceID);
+        virtual bool supportsExtension ( Extension extension ) const;
+        virtual bool extension(Extension extension, const ExtensionOption *option = 0, ExtensionReturn *output = 0);
 public slots:
 	bool shouldInterruptJavaScript();
+
 };
 
 class DLL_LOCAL ResourceObject: public QObject {
