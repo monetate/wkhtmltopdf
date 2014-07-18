@@ -117,7 +117,6 @@ QNetworkReply * MyNetworkAccessManager::createRequest(Operation op, const QNetwo
 
 MyQWebPage::MyQWebPage(ResourceObject & res): QWebPage(), resource(res) 
 {
-//    std::cout << "MyQWebPage::MyQWebPage" << std::endl;
 }
 
 void MyQWebPage::javaScriptAlert(QWebFrame *, const QString & msg) {
@@ -150,7 +149,6 @@ bool MyQWebPage::shouldInterruptJavaScript() {
 
 bool MyQWebPage::supportsExtension ( Extension extension ) const
 {
-    std::cout << "MyQWebPage::supportsExtension:" <<extension<< std::endl;
     if (extension == QWebPage::ErrorPageExtension)
     {
         return true;
@@ -160,21 +158,16 @@ bool MyQWebPage::supportsExtension ( Extension extension ) const
 
 bool MyQWebPage::extension(Extension extension, const ExtensionOption *option, ExtensionReturn *output)
 {
-    std::cout << "MyQWebPage::extension:" <<extension<< std::endl;
     if (extension != QWebPage::ErrorPageExtension)
         return false;
 
     ErrorPageExtensionOption *errorOption = (ErrorPageExtensionOption*) option;
-    std::cout << "Error loading " << qPrintable(errorOption->url.toString())  << std::endl;
     if(errorOption->domain == QWebPage::QtNetwork)
-        std::cout << "Network error (" << errorOption->error << "): ";
+        resource.warning(QString("Network error (%1)").arg(errorOption->error));
     else if(errorOption->domain == QWebPage::Http)
-        std::cout << "HTTP error (" << errorOption->error << "): ";
+        resource.warning(QString("HTTP error (%1)").arg(errorOption->error));
     else if(errorOption->domain == QWebPage::WebKit)
-        std::cout << "WebKit error (" << errorOption->error << "): ";
-
-    std::cout << qPrintable(errorOption->errorString) << std::endl;
-
+        resource.warning(QString("WebKit error (%1)").arg(errorOption->error));
     return false;
 }
 
@@ -203,8 +196,8 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 
 	connect(&webPage, SIGNAL(loadStarted()), this, SLOT(loadStarted()));
 	connect(&webPage, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
-        //connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+	//connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+        connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
 	connect(&webPage, SIGNAL(printRequested(QWebFrame*)), this, SLOT(printRequested(QWebFrame*)));
 
 	//If some ssl error occurs we want sslErrors to be called, so the we can ignore it
@@ -250,20 +243,24 @@ ResourceObject::~ResourceObject()
 /*!
  * Once loading starting, this is called
  */
-void ResourceObject::loadStarted() {
-	if (finished == true) {
-		++multiPageLoader.loading;
-		finished = false;
-	}
-	if (multiPageLoader.loadStartedEmitted) return;
-	multiPageLoader.loadStartedEmitted=true;
-	emit multiPageLoader.outer.loadStarted();
-
-        if ( settings.load_timeout_msec )
-        {
-            QTimer::singleShot(settings.load_timeout_msec, this, SLOT(loadIncomplete()));
-        }
-
+void ResourceObject::loadStarted() 
+{
+    if (finished == true) 
+    {
+        ++multiPageLoader.loading;
+        finished = false;
+    }
+    if (multiPageLoader.loadStartedEmitted)
+    {
+        return;
+    }
+    multiPageLoader.loadStartedEmitted=true;
+    emit multiPageLoader.outer.loadStarted();
+    
+    if ( settings.load_timeout_msec )
+    {
+        QTimer::singleShot(settings.load_timeout_msec, this, SLOT(loadIncomplete()));
+    }
 }
 
 
@@ -288,27 +285,28 @@ void ResourceObject::loadProgress(int p) {
 
 
 void ResourceObject::loadFinished(bool ok) {
-    //std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << std::endl;
-	// If we are finished, this migth be a potential bug.
-	if (finished || multiPageLoader.resources.size() <= 0) {
-            warning(QString("A finished ResourceObject received a loading finished signal. "
-                            "Finished: %1, resources size: %2").arg(finished).arg(multiPageLoader.resources.size()));
-            return;
-	}
+//    std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    // If we are finished, this migth be a potential bug.
+    if (finished || multiPageLoader.resources.size() <= 0) {
+        warning(QString("A finished ResourceObject received a loading finished signal. "
+                        "Finished: %1, resources size: %2").arg(finished).arg(multiPageLoader.resources.size()));
+        return;
+    }
 
-	multiPageLoader.hasError = multiPageLoader.hasError || (!ok && settings.loadErrorHandling == settings::LoadPage::abort);
-	if (!ok) {
-            if (settings.loadErrorHandling == settings::LoadPage::abort)
-            {
-                error(QString("Failed loading page ") + url.toString());// + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
-                //return;
-            }
-		else if (settings.loadErrorHandling == settings::LoadPage::skip) {
-			warning(QString("Failed loading page ") + url.toString() + " (skipped)");
-			lo.skip = true;
-		} else
-			warning(QString("Failed loading page ") + url.toString() + " (ignored)");
-	}
+    multiPageLoader.hasError = multiPageLoader.hasError || (!ok && settings.loadErrorHandling == settings::LoadPage::abort);
+    if (!ok) {
+        if (settings.loadErrorHandling == settings::LoadPage::abort)
+        {
+            error(QString("Failed loading page ") + url.toString());// + " (sometimes it will work just to ignore this error with --load-error-handling ignore)");
+            return;
+        }
+        else if (settings.loadErrorHandling == settings::LoadPage::skip) {
+            warning(QString("Failed loading page ") + url.toString() + " (skipped)");
+            lo.skip = true;
+            return;
+        } else
+            warning(QString("Failed loading page ") + url.toString() + " (ignored)");
+    }
 
 	// Evaluate extra user supplied javascript
         emit multiPageLoader.outer.javascriptEnvironment(&webPage);
@@ -324,11 +322,11 @@ void ResourceObject::loadFinished(bool ok) {
 
 	// XXX: If loading failed there's no need to wait
 	//      for javascript on this resource.
-	if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
-	else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
-	else {
+	//if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
+	//else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
+	//else {
             QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
-        }
+            //}
 }
 
 void ResourceObject::waitWindowStatus() {
@@ -347,19 +345,23 @@ void ResourceObject::printRequested(QWebFrame *) {
 }
 
 void ResourceObject::loadDone() {
-	if (finished) return;
-	finished=true;
 
-        //std::cout << "ResourceObject::loadDone, stopping all..." << std::endl;
-	// Ensure no more loading goes..
-	webPage.triggerAction(QWebPage::Stop);
-	webPage.triggerAction(QWebPage::StopScheduledPageRefresh);
-	networkAccessManager.dispose();
-	//disconnect(this, 0, 0, 0);
+//    std::cout << "ResourceObject::loadDone, finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    if (finished) 
+    {
+        return;
+    }
+    finished = true;
 
-	--multiPageLoader.loading;
-	if (multiPageLoader.loading == 0)
-		multiPageLoader.loadDone();
+    // Ensure no more loading goes..
+    //webPage.triggerAction(QWebPage::Stop);
+    //webPage.triggerAction(QWebPage::StopScheduledPageRefresh);
+    //networkAccessManager.dispose();
+    //disconnect(this, 0, 0, 0);
+    
+    --multiPageLoader.loading;
+    if (multiPageLoader.loading == 0)
+        multiPageLoader.loadDone();
 }
 
 void ResourceObject::loadIncomplete() {
@@ -407,10 +409,10 @@ void ResourceObject::error(const QString & str) {
  * \param reply The networkreply that has finished
  */
 void ResourceObject::amfinished(QNetworkReply * reply) {
-    if ( reply->error() )
-    {
-        std::cout << "amfinished QNetworkReply:" << reply->url().toString().toLocal8Bit().constData() << " error:" << reply->error() << std::endl;
-    }
+    //if ( reply->error() )
+    //{
+    //    std::cout << "amfinished QNetworkReply:" << reply->url().toString().toLocal8Bit().constData() << " error:" << reply->error() << std::endl;
+    //}
 	int networkStatus = reply->error();
 	int httpStatus = reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
 	if ((networkStatus != 0 && networkStatus != 5) || (httpStatus > 399 && httpErrorCode == 0))
@@ -454,8 +456,9 @@ void ResourceObject::sslErrors(QNetworkReply *reply, const QList<QSslError> &) {
 }
 
 void ResourceObject::load() {
-	finished=false;
-	++multiPageLoader.loading;
+    finished = false;
+    ++multiPageLoader.loading;
+//    std::cout << "ResourceObject::load: finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
 
 	bool hasFiles=false;
 	foreach (const settings::PostItem & pi, settings.post) hasFiles |= pi.file;
