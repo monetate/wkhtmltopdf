@@ -110,7 +110,7 @@ QNetworkReply * MyNetworkAccessManager::createRequest(Operation op, const QNetwo
 		foreach (const HT & j, settings.customHeaders)
 			r3.setRawHeader(j.first.toLatin1(), j.second.toLatin1());
 	}
-        //std::cout << "QNetworkRequest::createRequest:" << req.url().toString().toLocal8Bit().constData() << " op:" << op << std::endl;
+        std::cout << "QNetworkRequest::createRequest:" << req.url().toString().toLocal8Bit().constData() << " op:" << op << std::endl;
 	return QNetworkAccessManager::createRequest(op, r3, outgoingData);
 }
 
@@ -285,7 +285,7 @@ void ResourceObject::loadProgress(int p) {
 
 
 void ResourceObject::loadFinished(bool ok) {
-//    std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
     // If we are finished, this migth be a potential bug.
     if (finished || multiPageLoader.resources.size() <= 0) {
         warning(QString("A finished ResourceObject received a loading finished signal. "
@@ -313,7 +313,6 @@ void ResourceObject::loadFinished(bool ok) {
         QString script_result;
 	foreach (const QString & str, settings.runScript) 
         {
-            //std::cout << "evaluating javascript:" << str.toLocal8Bit().constData() << std::endl;
             script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
         }
 
@@ -346,7 +345,7 @@ void ResourceObject::printRequested(QWebFrame *) {
 
 void ResourceObject::loadDone() {
 
-//    std::cout << "ResourceObject::loadDone, finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    std::cout << "ResourceObject::loadDone, finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
     if (finished) 
     {
         return;
@@ -366,7 +365,7 @@ void ResourceObject::loadDone() {
 
 void ResourceObject::loadIncomplete() {
 	if (finished) return;
-        error("Incomplete load");
+        error(QString("Incomplete load: %1").arg(url.toString()));
         loadDone();
 }
 
@@ -458,7 +457,7 @@ void ResourceObject::sslErrors(QNetworkReply *reply, const QList<QSslError> &) {
 void ResourceObject::load() {
     finished = false;
     ++multiPageLoader.loading;
-//    std::cout << "ResourceObject::load: finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    std::cout << "ResourceObject::load: finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
 
 	bool hasFiles=false;
 	foreach (const settings::PostItem & pi, settings.post) hasFiles |= pi.file;
