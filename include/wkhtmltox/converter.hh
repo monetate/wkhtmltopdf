@@ -1,3 +1,6 @@
+// -*- mode: c++; tab-width: 4; indent-tabs-mode: t; eval: (progn (c-set-style "stroustrup") (c-set-offset 'innamespace 0)); -*-
+// vi:set ts=4 sts=4 sw=4 noet :
+//
 // Copyright 2010 wkhtmltopdf authors
 //
 // This file is part of wkhtmltopdf.
@@ -24,8 +27,10 @@
 #endif
 
 #include <QObject>
+#include <QWebPage>
 #include <wkhtmltox/loadsettings.hh>
 #include <wkhtmltox/dllbegin.inc>
+
 
 namespace wkhtmltopdf {
 
@@ -44,6 +49,8 @@ public:
 signals:
     void warning(const QString & message);
     void error(const QString & message);
+    void scriptResult(const QString& result);
+    void javascriptEnvironment(QWebPage* page);
     void phaseChanged();
     void progressChanged(int progress);
     void finished(bool ok);

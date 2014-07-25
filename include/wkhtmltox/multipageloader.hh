@@ -1,3 +1,6 @@
+// -*- mode: c++; tab-width: 4; indent-tabs-mode: t; eval: (progn (c-set-style "stroustrup") (c-set-offset 'innamespace 0)); -*-
+// vi:set ts=4 sts=4 sw=4 noet :
+//
 // Copyright 2010 wkhtmltopdf authors
 //
 // This file is part of wkhtmltopdf.
@@ -67,6 +70,8 @@ signals:
 	void loadStarted();
 	void warning(QString text);
 	void error(QString text);
+        void scriptResult(QString test);
+        void javascriptEnvironment(QWebPage* page);
 private:
 	MultiPageLoaderPrivate * d;
 	friend class MultiPageLoaderPrivate;
