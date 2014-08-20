@@ -84,6 +84,7 @@ private:
 	int progress;
 	bool finished;
 	bool signalPrint;
+        int checkDoneAttempts;
 	MultiPageLoaderPrivate & multiPageLoader;
 public:
 	ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, const settings::LoadPage & s);
@@ -97,10 +98,13 @@ public slots:
 	void loadStarted();
 	void loadProgress(int progress);
 	void loadFinished(bool ok);
+        void frameCreated(QWebFrame* frame);
+        void frameFinished(bool ok);
         void loadIncomplete();
 	void waitWindowStatus();
 	void printRequested(QWebFrame * frame);
 	void loadDone();
+        void checkDone();
 	void handleAuthenticationRequired(QNetworkReply *reply, QAuthenticator *authenticator);
 	void warning(const QString & str);
 	void error(const QString & str);

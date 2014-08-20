@@ -126,6 +126,9 @@ struct DLL_PUBLIC LoadPage {
 
 	QString cacheDir;
 	static QList<QString> mediaFilesExtensions;
+
+        QString selector;
+        int virtualWidth;
 };
 
 DLL_PUBLIC LoadPage::LoadErrorHandling strToLoadErrorHandling(const char * s, bool * ok=0);

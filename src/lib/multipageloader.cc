@@ -30,6 +30,7 @@
 #include <QFileInfo>
 #include <QNetworkCookie>
 #include <QNetworkDiskCache>
+#include <QWebElement>
 #include <QTimer>
 #include <QUuid>
 #if QT_VERSION >= 0x050000
@@ -181,6 +182,7 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 	progress(0),
 	finished(false),
 	signalPrint(false),
+    checkDoneAttempts(0),
 	multiPageLoader(mpl),
 	webPage(*this),
 	lo(webPage),
@@ -195,9 +197,10 @@ ResourceObject::ResourceObject(MultiPageLoaderPrivate & mpl, const QUrl & u, con
 		networkAccessManager.allow(url.toLocalFile());
 
 	connect(&webPage, SIGNAL(loadStarted()), this, SLOT(loadStarted()));
-	connect(&webPage, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
-	//connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
-        connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+	//connect(&webPage, SIGNAL(loadProgress(int)), this, SLOT(loadProgress(int)));
+	connect(webPage.mainFrame(), SIGNAL(loadFinished(bool)), this, SLOT(loadFinished(bool)));
+        //connect(&webPage, SIGNAL(loadFinished(bool)), this, SLOT(frameFinished(bool)));
+        //connect(&webPage, SIGNAL(frameCreated(QWebFrame*)), this, SLOT(frameCreated(QWebFrame*)));
 	connect(&webPage, SIGNAL(printRequested(QWebFrame*)), this, SLOT(printRequested(QWebFrame*)));
 
 	//If some ssl error occurs we want sslErrors to be called, so the we can ignore it
@@ -279,13 +282,22 @@ void ResourceObject::loadProgress(int p) {
 	multiPageLoader.progressSum -= progress;
 	progress = p;
 	multiPageLoader.progressSum += progress;
-
+        //std::cout << "load progress:" <<  multiPageLoader.progressSum / multiPageLoader.resources.size() << std::endl;
 	emit multiPageLoader.outer.loadProgress(multiPageLoader.progressSum / multiPageLoader.resources.size());
+}
+
+void ResourceObject::frameCreated(QWebFrame* frame)
+{
+    //std::cout << "ResourceObject::frameCreated" << std::endl;
+}
+
+void ResourceObject::frameFinished(bool ok)
+{
 }
 
 
 void ResourceObject::loadFinished(bool ok) {
-    //std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    //std::cout << "ResourceObject::loadFinished ok:" << ok << " finished:" << finished << " multiPageLoader resources:" << multiPageLoader.resources.size() << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
     // If we are finished, this migth be a potential bug.
     if (finished || multiPageLoader.resources.size() <= 0) {
         warning(QString("A finished ResourceObject received a loading finished signal. "
@@ -308,29 +320,23 @@ void ResourceObject::loadFinished(bool ok) {
             warning(QString("Failed loading page ") + url.toString() + " (ignored)");
     }
 
-	// Evaluate extra user supplied javascript
-        emit multiPageLoader.outer.javascriptEnvironment(&webPage);
-        QString script_result;
-	foreach (const QString & str, settings.runScript) 
-        {
-            script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
-        }
-
-        // communicate result of js evaluation
-        emit multiPageLoader.outer.scriptResult(script_result);
 
 	// XXX: If loading failed there's no need to wait
 	//      for javascript on this resource.
 	//if (!ok || signalPrint || settings.jsdelay == 0) loadDone();
 	//else if (!settings.windowStatus.isEmpty()) waitWindowStatus();
-	//else {
-            QTimer::singleShot(settings.jsdelay, this, SLOT(loadDone()));
-            //}
+
+    //std::cout << "waiting " << settings.jsdelay << " to call loadDone" << std::endl;
+    //QTimer::singleShot(3000, this, SLOT(loadDone()));
+    //checkDone();
+
+    checkDone();
+    //QTimer::singleShot(1, this, SLOT(checkDone()));
 }
 
 void ResourceObject::waitWindowStatus() {
 	QString windowStatus = webPage.mainFrame()->evaluateJavaScript("window.status").toString();
-	//warning(QString("window.status:" + windowStatus + " settings.windowStatus:" + settings.windowStatus));
+        //std::cout << "window.status:" << windowStatus << std::endl;
 	if (windowStatus != settings.windowStatus) {
 		QTimer::singleShot(50, this, SLOT(waitWindowStatus()));
 	} else {
@@ -343,13 +349,44 @@ void ResourceObject::printRequested(QWebFrame *) {
 	loadDone();
 }
 
+void ResourceObject::checkDone() 
+{
+    checkDoneAttempts++;
+    bool is_done = true;
+    if ( checkDoneAttempts < 20*5 && settings.selector.length() && settings.selector != "body" )
+    {
+        // make sure this element exists
+        webPage.setViewportSize(QSize(settings.virtualWidth, 10));
+        QWebFrame* frame = webPage.mainFrame();
+        QWebElement el = frame->findFirstElement( settings.selector );
+        if ( !el.isNull() )
+        {
+            QMap<QString,QVariant> crop = el.evaluateJavaScript( QString("this.getBoundingClientRect()") ).toMap();
+            QRect r = QRect( crop["left"].toInt(), crop["top"].toInt(),
+                             crop["width"].toInt(), crop["height"].toInt() );       
+            QSize s = webPage.viewportSize();
+            //std::cout << "-> isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << " rect:" << crop["left"].toInt() << "," << crop["top"].toInt() << "," <<crop["width"].toInt() << "," <<crop["height"].toInt() << "," << std::endl;
+            if ( r.width() <= 0 || r.height() <= 0 )
+            {
+                is_done = false;
+                QTimer::singleShot(50, this, SLOT(checkDone()));
+            }
+        }
+    }
+    if ( is_done )
+    {
+        loadDone();
+    }
+}
+
 void ResourceObject::loadDone() {
 
-    //std::cout << "ResourceObject::loadDone, finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
+    //std::cout << "ResourceObject::loadDone, currently finished:" << finished << " multiPageLoader.loading:" << multiPageLoader.loading << std::endl;
     if (finished) 
     {
         return;
     }
+
     finished = true;
 
     // Ensure no more loading goes..
@@ -360,7 +397,20 @@ void ResourceObject::loadDone() {
     
     --multiPageLoader.loading;
     if (multiPageLoader.loading == 0)
+    {
+	// Evaluate extra user supplied javascript
+        emit multiPageLoader.outer.javascriptEnvironment(&webPage);
+        QString script_result;
+	foreach (const QString & str, settings.runScript) 
+        {
+            script_result = webPage.mainFrame()->evaluateJavaScript(str).toString();
+        }
+
+        // communicate result of js evaluation
+        emit multiPageLoader.outer.scriptResult(script_result);
+
         multiPageLoader.loadDone();
+    }
 }
 
 void ResourceObject::loadIncomplete() {
@@ -513,6 +563,7 @@ void ResourceObject::load() {
  	foreach (const SSP & pair, settings.cookies)
 		multiPageLoader.cookieJar->useCookie(url, pair.first, pair.second);
 
+        //std::cout << "creating network request for: " << url.toString().toLatin1().constData() << std::endl;
 	QNetworkRequest r = QNetworkRequest(url);
 	typedef QPair<QString, QString> HT;
 	foreach (const HT & j, settings.customHeaders)
@@ -669,6 +720,7 @@ MultiPageLoader::~MultiPageLoader() {
   @param string Url describing the resource to load
 */
 LoaderObject * MultiPageLoader::addResource(const QString & string, const settings::LoadPage & s, const QString * data) {
+    //std::cout << "MultiPageLoader::addResource:" << string.toLatin1().constData() << std::endl;
 	QString url=string;
 	if (data && !data->isEmpty()) {
 		url = d->tempIn.create(".html");
