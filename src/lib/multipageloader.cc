@@ -362,7 +362,7 @@ void ResourceObject::checkDone()
         QWebElement el = frame->findFirstElement( settings.selector );
         if ( el.isNull() )
         {
-            std::cout << "ResourceObject::checkDone: el.isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << std::endl;
+            //std::cout << "ResourceObject::checkDone: el.isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << std::endl;
             if (checkDoneAttempts==1)
             {
                 warning(QString("Unable to find element %1 after page load, continuing to search").arg(settings.selector));
