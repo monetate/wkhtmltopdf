@@ -129,6 +129,7 @@ struct DLL_PUBLIC LoadPage {
 
         QString selector;
         int virtualWidth;
+        int verbosity;
 };
 
 DLL_PUBLIC LoadPage::LoadErrorHandling strToLoadErrorHandling(const char * s, bool * ok=0);

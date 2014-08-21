@@ -353,21 +353,48 @@ void ResourceObject::checkDone()
 {
     checkDoneAttempts++;
     bool is_done = true;
-    if ( checkDoneAttempts < 20*5 && settings.selector.length() && settings.selector != "body" )
+    const int wait_count = 20*5;
+    if ( checkDoneAttempts < wait_count && settings.selector.length() && settings.selector != "body" )
     {
-        // make sure this element exists
+        // make sure element exists
         webPage.setViewportSize(QSize(settings.virtualWidth, 10));
         QWebFrame* frame = webPage.mainFrame();
         QWebElement el = frame->findFirstElement( settings.selector );
-        if ( !el.isNull() )
+        if ( el.isNull() )
         {
+            std::cout << "ResourceObject::checkDone: el.isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << std::endl;
+            if (checkDoneAttempts==1)
+            {
+                warning(QString("Unable to find element %1 after page load, continuing to search").arg(settings.selector));
+            }
+            if (checkDoneAttempts==(wait_count-1))
+            {
+                error(QString("Unable to find element %1").arg(settings.selector));
+            }
+            is_done = false;
+            QTimer::singleShot(50, this, SLOT(checkDone()));
+        }
+        else
+        {
+            // make sure element is visible
             QMap<QString,QVariant> crop = el.evaluateJavaScript( QString("this.getBoundingClientRect()") ).toMap();
             QRect r = QRect( crop["left"].toInt(), crop["top"].toInt(),
                              crop["width"].toInt(), crop["height"].toInt() );       
             QSize s = webPage.viewportSize();
-            //std::cout << "-> isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << " rect:" << crop["left"].toInt() << "," << crop["top"].toInt() << "," <<crop["width"].toInt() << "," <<crop["height"].toInt() << "," << std::endl;
+            if ( settings.verbosity > 1 )
+            {
+                std::cout << "ResourceObject::checkDone: el.isNull:" << el.isNull() << " selector:" << settings.selector.toLatin1().constData() << " rect:" << crop["left"].toInt() << "," << crop["top"].toInt() << "," <<crop["width"].toInt() << "," <<crop["height"].toInt() << "," << std::endl;
+            }
             if ( r.width() <= 0 || r.height() <= 0 )
             {
+                if (checkDoneAttempts==1)
+                {
+                    warning(QString("Element %1 has invalid rect (%2x%3) after page load, waiting for resize").arg(settings.selector).arg(r.width()).arg(r.height()));
+                }
+                if (checkDoneAttempts==(wait_count-1))
+                {
+                    error(QString("Element %1 has invalid rect (%2x%3) after page load").arg(settings.selector).arg(r.width()).arg(r.height()));
+                }
                 is_done = false;
                 QTimer::singleShot(50, this, SLOT(checkDone()));
             }

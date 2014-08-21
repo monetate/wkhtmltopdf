@@ -84,6 +84,7 @@ ReflectImpl<LoadPage>::ReflectImpl(LoadPage & c) {
 	WKHTMLTOPDF_REFLECT(cacheDir);
 	WKHTMLTOPDF_REFLECT(selector);
 	WKHTMLTOPDF_REFLECT(virtualWidth);
+	WKHTMLTOPDF_REFLECT(verbosity);
 }
 
 ReflectImpl<Web>::ReflectImpl(Web & c) {
