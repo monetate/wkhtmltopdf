@@ -25,8 +25,10 @@
 #endif
 
 #include "converter_p.hh"
+#include <iostream>
 #include "multipageloader.hh"
 #include <QWebFrame>
+#include <QDateTime>
 #include <qapplication.h>
 namespace wkhtmltopdf {
 
@@ -91,12 +93,22 @@ void ConverterPrivate::cancel() {
 	error=true;
 }
 
-bool ConverterPrivate::convert() {
-	convertionDone=false;
-	beginConvert();
-	while (!convertionDone)
-		qApp->processEvents(QEventLoop::WaitForMoreEvents | QEventLoop::AllEvents);
-	return !error;
+bool ConverterPrivate::convert( int retry_timeout_ms ) {
+    convertionDone=false;
+    beginConvert();
+    QDateTime start_time = QDateTime::currentDateTime();
+    while (!convertionDone)
+    {
+        std::cout << "msecs elapsed:" << start_time.msecsTo( QDateTime::currentDateTime()) << std::endl;
+        if ( start_time.msecsTo( QDateTime::currentDateTime() ) > retry_timeout_ms )
+        {
+            std::cout << "too many msecs elapsed:" << start_time.msecsTo( QDateTime::currentDateTime()) << std::endl;
+            //error = true;
+            //break;
+        }
+        qApp->processEvents(/*QEventLoop::WaitForMoreEvents |*/ QEventLoop::AllEvents);
+    }
+    return !error;
 }
 
 
@@ -149,8 +161,8 @@ void Converter::beginConvertion() {
 /*!
   \brief Synchronous convert html pages to a pdf document.
 */
-bool Converter::convert() {
-	return priv().convert();
+bool Converter::convert( int retry_timeout_ms ) {
+	return priv().convert(retry_timeout_ms);
 }
 
 /*!

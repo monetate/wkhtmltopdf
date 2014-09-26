@@ -59,7 +59,7 @@ public slots:
 
 	virtual void beginConvert() = 0;
 	void cancel();
-	bool convert();
+	bool convert(int retry_timeout_ms );
 	void forwardError(QString error);
 	void forwardWarning(QString warning);
         void forwardScriptResult(QString result);

@@ -61,7 +61,7 @@ signals:
 	void radiobuttonCheckedSvgChanged(const QString & path);
 public slots:
     void beginConvertion();
-	bool convert();
+	bool convert( int retry_timeout_ms );
 	void cancel();
 protected:
 	void emitCheckboxSvgs(const settings::LoadPage & ls);
